@@ -9,18 +9,33 @@ import (
 	"strings"
 )
 
+var (
+	exit = os.Exit
+
+	flags = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
+
+	help         = flags.Bool("help", false, "Print usage instructions and exit.")
+	printVersion = flags.Bool("version", false, "Print version information and exit.")
+)
+
 func main() {
-	//Declaring flags
+	flags.Usage = usage
+	flags.Parse(os.Args[1:])
 
-	//fFail := false
-	//fData := false
+	if *printVersion {
+		// TODO(Print version information)
+	}
 
-	HelpSet := flag.NewFlagSet("help", flag.ExitOnError)
-	fHelp := HelpSet.Bool("h", false, "Display help.")
-	fExtHelp := HelpSet.Bool("x", false, "Display extended help.")
+	if *help {
+		usage()
+		exit(0)
+	}
 
-	UriSet := flag.NewFlagSet("uri", flag.ExitOnError)
-	fUri := UriSet.String("u", "", "Request uri.")
+	args := flags.Args()
+	if len(args) == 0 {
+
+	}
+
 	fHeadersOnly := UriSet.Bool("e", false, "Display only headers.")
 
 	if len(os.Args) < 2 {
@@ -69,5 +84,16 @@ func main() {
 		}
 	} else {
 		fmt.Println(string(body))
+	}
+}
+
+// TODO(Usage information(help))
+func usage() {
+
+}
+
+func fail(err error, msg string, args ...interface{}) {
+	if err != nil {
+		
 	}
 }
