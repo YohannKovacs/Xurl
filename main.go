@@ -106,7 +106,7 @@ func prettify(docString string) string {
 	j := 0
 
 	for _, part := range parts {
-		strings.TrimSpace(part)
+		part = strings.TrimSpace(part)
 		if part == "" {
 			continue
 		}
