@@ -16,6 +16,8 @@ var (
 
 	help         = flags.Bool("help", false, "Print usage instructions and exit.")
 	printVersion = flags.Bool("version", false, "Print version information and exit.")
+	headerOnly	 = flags.Bool("headersOnly", false, "Print only headers and exit.")
+
 )
 
 func main() {
@@ -33,67 +35,83 @@ func main() {
 
 	args := flags.Args()
 	if len(args) == 0 {
-
+		fail(nil, "Too few arguments.")
 	}
 
-	fHeadersOnly := UriSet.Bool("e", false, "Display only headers.")
+	// TODO(implement header only)
 
-	if len(os.Args) < 2 {
-		panic("Please provide a subcommand: help or uri")
-	}
-	switch os.Args[1] {
-	case "help":
-		HelpSet.Parse(os.Args[2:])
-		if *fHelp {
-			HelpSet.Usage()
-		} else if *fExtHelp {
-			fmt.Println("Extended help")
-			os.Exit(0)
-		}
-	case "uri":
-		UriSet.Parse(os.Args[2:])
-		if *fUri == "" {
-			panic("Please provide a URI from using the -u flag")
-		}
+	addr := args[0]
+	if addr == "" {
+		fail(nil, "No host or port specified")
 	}
 
-	if strings.Split(*fUri, ".")[0] == "www" {
-		*fUri, _ = strings.CutPrefix(*fUri, "www.")
-		*fUri = strings.Join([]string{"http", *fUri}, "://")
+	// TODO(Crazy fix, handle www better)
+	if strings.Split(addr, ".")[0] == "www" {
+		addr, _ = strings.CutPrefix(addr, "www.")
+		addr = strings.Join([]string{"http", addr}, "://")
 	}
 
-	resp, err := http.Get(*fUri)
+	resp, err := http.Get(addr)
 	if err != nil {
-		panic(err)
+		fail(err, "Error while getting a response.")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		panic("Url not available.")
+		fail(nil, "Uri provided is not available.")
 	}
-
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-
-	if *fHeadersOnly {
-		headers := resp.Header
-		for k, v := range headers {
-			fmt.Println(k, ":\t", v)
+	
+	if *headerOnly {
+		for k, v := range resp.Header {
+			fmt.Println(k, v)
 		}
+		exit(0)
 	} else {
+		body, err := io.ReadAll(resp.Body)
+		if err != nil {
+			fail(err, "Error while reading response body.")
+		}
 		fmt.Println(string(body))
+		exit(0)
 	}
 }
 
 // TODO(Usage information(help))
 func usage() {
-
+	fmt.Fprintf(os.Stderr, `Usage:
+	%s [flags] [address]
+	
+	
+	`, os.Args[0])
+	flags.PrintDefaults()
 }
 
 func fail(err error, msg string, args ...interface{}) {
 	if err != nil {
-		
+		msg += ": %v"
+		args = append(args, msg) 
 	}
+	fmt.Fprintf(os.Stderr, msg, args)
+	fmt.Fprintln(os.Stderr)
+	if err != nil {
+		exit(1)
+	} else {
+		fmt.Fprintf(os.Stderr, "Try %s -help for more details.\n", os.Args[0])
+		exit(2)
+	}
+}
+
+func prettify(docString string) string {
+	parts := strings.Split(docString, "\n")
+	j := 0
+
+	for _, part := range parts {
+		strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		parts[j] = part
+		j++
+	}
+	return strings.Join(parts[:j], "\n")
 }
