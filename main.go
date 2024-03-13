@@ -15,17 +15,19 @@ var (
 	flags = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
 	help         = flags.Bool("help", false, "Print usage instructions and exit.")
-	printVersion = flags.Bool("version", false, "Print version information and exit.")
-	headerOnly	 = flags.Bool("headersOnly", false, "Print only headers and exit.")
-
+	version = flags.Bool("version", false, "Print version information and exit.")
+	headerOnly   = flags.Bool("headersOnly", false, "Print only headers and exit.")
 )
 
 func main() {
 	flags.Usage = usage
 	flags.Parse(os.Args[1:])
 
-	if *printVersion {
-		// TODO(Print version information)
+	if *version {
+		fmt.Fprintln(os.Stdout, prettify(`
+		Version : 0.0.1
+		`))
+		exit(0)
 	}
 
 	if *help {
@@ -38,14 +40,12 @@ func main() {
 		fail(nil, "Too few arguments.")
 	}
 
-	// TODO(implement header only)
-
 	addr := args[0]
 	if addr == "" {
 		fail(nil, "No host or port specified")
 	}
 
-	// TODO(Crazy fix, handle www better)
+	// FIXME(Can we handle www better?)
 	if strings.Split(addr, ".")[0] == "www" {
 		addr, _ = strings.CutPrefix(addr, "www.")
 		addr = strings.Join([]string{"http", addr}, "://")
@@ -60,10 +60,10 @@ func main() {
 	if resp.StatusCode != 200 {
 		fail(nil, "Uri provided is not available.")
 	}
-	
+
 	if *headerOnly {
 		for k, v := range resp.Header {
-			fmt.Println(k, v)
+			fmt.Fprintln(os.Stdout, k, v)
 		}
 		exit(0)
 	} else {
@@ -71,25 +71,29 @@ func main() {
 		if err != nil {
 			fail(err, "Error while reading response body.")
 		}
-		fmt.Println(string(body))
+		fmt.Fprintln(os.Stdout, string(body))
 		exit(0)
 	}
 }
 
 // TODO(Usage information(help))
 func usage() {
-	fmt.Fprintf(os.Stderr, `Usage:
+	printLogo()
+	fmt.Fprintf(os.Stderr, prettify(`
+	Usage:
 	%s [flags] [address]
-	
-	
-	`, os.Args[0])
+
+	Xurl is a curl alternative cli program. The main purpose of xurl is to send data 
+	to stdout to make it easy to chain it with other tools to do what you want.
+	`), os.Args[0])
+	fmt.Fprintln(os.Stderr)
 	flags.PrintDefaults()
 }
 
 func fail(err error, msg string, args ...interface{}) {
 	if err != nil {
 		msg += ": %v"
-		args = append(args, msg) 
+		args = append(args, msg)
 	}
 	fmt.Fprintf(os.Stderr, msg, args)
 	fmt.Fprintln(os.Stderr)
@@ -114,4 +118,13 @@ func prettify(docString string) string {
 		j++
 	}
 	return strings.Join(parts[:j], "\n")
+}
+
+func printLogo() {
+	logo, err := os.ReadFile("logo.txt")
+	if err != nil {
+		fail(err, "Error while reading the logo file.")
+	}
+
+	fmt.Fprintln(os.Stderr, string(logo))
 }
