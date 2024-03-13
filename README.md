@@ -5,16 +5,16 @@
     \        /
      \      /
       \    /
-       \  /				                   |
-        \/		             ~   -------   |
-	    /\        |	     |	  \ / 	   |   |
-       /  \	      |	     |	   |	       |
+       \  /
+        \/		         ~   -------   |
+	/\        |	     |	  \ / 	   |   |
+       /  \	  |	     |	   |	       |
       /	   \	  |	     |	   |	       |
      /	    \	  |	     |	   |	       |
     /        \	  |	     |	   |	       |
    /	      \	  |	     |     |	       |
   /  	       \  |	     |     |	       |
-  --------------  --------    ----	       -----------
+  --------------  ------------	   -           ----------
 ```
 
 Xurl is a simple curl alternative, built using golang. The main purpose of Xurl is to fetch and send data to stdout to make it easy to chain/pipe it into other cli tools to do what you want.
