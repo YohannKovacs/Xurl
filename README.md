@@ -32,7 +32,7 @@ xurl [flags] [address]
 Simply provide the URL to fetch the data from that address. 
 
 > [!warning]
->  Xurl as of now only supports the Http protocol. Other protocols would be supported in the upcoming releases.
+>  Xurl as of now only supports the Http/Https protocol schemes. Other schemes would be supported in the upcoming releases.
 
 ## HeadersOnly
 In case you only want to fetch the response headers, use the `-headersOnly` flag

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io"
@@ -14,9 +15,10 @@ var (
 
 	flags = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
-	help         = flags.Bool("help", false, "Print usage instructions and exit.")
-	version = flags.Bool("version", false, "Print version information and exit.")
-	headerOnly   = flags.Bool("headersOnly", false, "Print only headers and exit.")
+	help       = flags.Bool("help", false, "Print usage instructions and exit.")
+	version    = flags.Bool("version", false, "Print version information and exit.")
+	headerOnly = flags.Bool("headersOnly", false, "Print only response headers and exit.")
+	data       = flags.Bool("data", false, "Add Json data to the request object.")
 )
 
 func main() {
@@ -40,7 +42,7 @@ func main() {
 		fail(nil, "Too few arguments.")
 	}
 
-	addr := args[0]
+	addr := args[len(args)-1]
 	if addr == "" {
 		fail(nil, "No host or port specified")
 	}
@@ -51,15 +53,40 @@ func main() {
 		addr = strings.Join([]string{"http", addr}, "://")
 	}
 
-	resp, err := http.Get(addr)
+	var (
+		resp *http.Response
+		err  error
+	)
+
+	// TODO(Parse the error and respond, if couldn't resolve host, or url malformed, or host failed to connect, etc.)
+	if *data {
+		var data []byte
+		dataArg := args[:len(args)-1]
+		if strings.ContainsRune(dataArg[0], '@') {
+			data, err = os.ReadFile(strings.Split(dataArg[0], "@")[1])
+			fmt.Println(string(data))
+			if err != nil {
+				fail(err, "Error while reading request data file")
+			}
+		}
+		resp, err = http.Post(addr, "Content-Type: application/json", bytes.NewBuffer(data))
+		if err != nil {
+			fail(err, "Error while getting a response.")
+		}
+
+	} else {
+		resp, err = http.Get(addr)
+	}
+
 	if err != nil {
 		fail(err, "Error while getting a response.")
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != 200 {
-		fail(nil, "Uri provided is not available.")
-	}
+	// TODO(Mechanism for printing err status codes)
+	// if resp.StatusCode != http.StatusAccepted {
+	// 	fail(nil, "Uri provided is not available.")
+	// }
 
 	if *headerOnly {
 		for k, v := range resp.Header {
@@ -76,12 +103,11 @@ func main() {
 	}
 }
 
-// TODO(Usage information(help))
 func usage() {
 	printLogo()
 	fmt.Fprintf(os.Stderr, prettify(`
 	Usage:
-	%s [flags] [address]
+	%s [flags] [data] [address]
 
 	Xurl is a curl alternative cli program. The main purpose of xurl is to send data 
 	to stdout to make it easy to chain it with other tools to do what you want.
