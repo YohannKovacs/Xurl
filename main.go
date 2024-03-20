@@ -53,7 +53,6 @@ func main() {
 		fail(nil, "No host or port specified")
 	}
 	
-	// FIXME(Can we handle www better?)
 	if strings.Split(addr, ".")[0] == "www" {
 		addr, _ = strings.CutPrefix(addr, "www.")
 		addr = strings.Join([]string{"http", addr}, "://")
@@ -165,9 +164,6 @@ func defaultRequest() {
 	defer resp.Body.Close()
 
 	// TODO(Mechanism for printing err status codes)
-	// if resp.StatusCode != http.StatusAccepted {
-	// 	fail(nil, "Uri provided is not available.")
-	// }
 
 	if *headerOnly {
 		for k, v := range resp.Header {
