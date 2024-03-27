@@ -1,18 +1,13 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"strings"
 )
 
 var (
-	exit = os.Exit
-
 	flags = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 
 	help       = flags.Bool("help", false, "Print usage instructions and exit.")
@@ -21,13 +16,13 @@ var (
 	data       = flags.Bool("data", false, "Add Json data to the request object.")
 )
 
-var (
-	addr			string
-	scheme			string
-	dataBytes		[]byte
-)
-
 func main() {
+	var (
+		addr    string
+		scheme  string
+		reqData []byte
+	)
+
 	flags.Usage = usage
 	flags.Parse(os.Args[1:])
 
@@ -35,12 +30,12 @@ func main() {
 		fmt.Fprintln(os.Stdout, prettify(`
 		Version : 0.0.1
 		`))
-		exit(0)
+		os.Exit(0)
 	}
 
 	if *help {
 		usage()
-		exit(0)
+		os.Exit(0)
 	}
 
 	args := flags.Args()
@@ -52,7 +47,7 @@ func main() {
 	if addr == "" {
 		fail(nil, "No host or port specified")
 	}
-	
+
 	if strings.Split(addr, ".")[0] == "www" {
 		addr, _ = strings.CutPrefix(addr, "www.")
 		addr = strings.Join([]string{"http", addr}, "://")
@@ -62,8 +57,8 @@ func main() {
 	if *data {
 		dataArg := args[:len(args)-1]
 		if strings.ContainsRune(dataArg[0], '@') {
-			dataBytes, err := os.ReadFile(strings.Split(dataArg[0], "@")[1])
-			fmt.Println(string(dataBytes))
+			var err error
+			reqData, err = os.ReadFile(strings.Split(dataArg[0], "@")[1])
 			if err != nil {
 				fail(err, "Error while reading request data file")
 			}
@@ -73,18 +68,36 @@ func main() {
 	if scheme != "" {
 		switch scheme {
 		case "http", "https":
-			defaultRequest()
+			fmt.Println(reqData)
+			sch := &DefaultScheme{
+				reqData: &reqData,
+				addr:    addr,
+				method:  "//TODO()",
+			}
+			sch.MakeRequest()
+		case "file":
+		case "ws":
+			sch := &WebsocketScheme{
+				url:    addr,
+				origin: "http://localhost",
+				data:	&reqData,
+			}
+			sch.MakeRequest()
 		case "ftp":
 		case "telnet":
 		case "imap":
-		default :
+		default:
 		}
 	}
 }
 
-
 func usage() {
-	printLogo()
+	logo, err := os.ReadFile("logo.txt")
+	if err != nil {
+		fail(err, "Error while reading the logo file.")
+	}
+	fmt.Fprintln(os.Stderr, string(logo))
+
 	fmt.Fprintf(os.Stderr, prettify(`
 	Usage:
 	%s [flags] [data] [address]
@@ -104,11 +117,11 @@ func fail(err error, msg string, args ...interface{}) {
 	fmt.Fprintf(os.Stderr, msg, args)
 	fmt.Fprintln(os.Stderr)
 	if err != nil {
-		exit(1)
+		os.Exit(1)
 	} else {
 		// nil err means it was cli usage issue
 		fmt.Fprintf(os.Stderr, "Try %s -help for more details.\n", os.Args[0])
-		exit(2)
+		os.Exit(2)
 	}
 }
 
@@ -125,62 +138,4 @@ func prettify(docString string) string {
 		j++
 	}
 	return strings.Join(parts[:j], "\n")
-}
-
-func printLogo() {
-	logo, err := os.ReadFile("logo.txt")
-	if err != nil {
-		fail(err, "Error while reading the logo file.")
-	}
-	fmt.Fprintln(os.Stderr, string(logo))
-}
-
-// TODO*()
-func ftpRequest() {
-
-}
-
-// TODO()
-func telnetRequest() {
-
-}
-
-// TODO(Makes a request on the basis of the default http scheme.)
-func defaultRequest() {
-	var (
-		resp *http.Response
-		err  error
-	)
-
-	if *data {
-		resp, err = http.Post(addr, "Content-Type: application/json", bytes.NewBuffer(dataBytes))
-	} else {
-		resp, err = http.Get(addr)
-	}
-
-	if err != nil {
-		fail(err, "Error while getting a response.")
-	}
-	defer resp.Body.Close()
-
-	// TODO(Mechanism for printing err status codes)
-
-	if *headerOnly {
-		for k, v := range resp.Header {
-			fmt.Fprintln(os.Stdout, k, v)
-		}
-		exit(0)
-	} else {
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			fail(err, "Error while reading response body.")
-		}
-		fmt.Fprintln(os.Stdout, string(body))
-		exit(0)
-	}
-}
-
-// TODO(Makes a request on the basis of the imap scheme)
-func imapRequest() {
-
 }
