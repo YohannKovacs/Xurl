@@ -66,13 +66,13 @@ func (s WebsocketScheme) MakeRequest() {
 		fail(err, "Error while dialing websocket connection")
 	}
 	defer conn.Close()
-	
+
 	if *data {
 		if _, err := conn.Write(*s.data); err != nil {
 			fail(err, "Error while writing data to connection")
 		}
 
-		msg := make([]byte, 512)
+		msg := make([]byte, 1024)
 		if _, err = conn.Read(msg); err != nil {
 			fail(err, "Error while reading message from websocket connection")
 		}
@@ -91,7 +91,7 @@ func (s WebsocketScheme) MakeRequest() {
 			fail(err, "Error while writing data to connection")
 		}
 
-		msg := make([]byte, 512)
+		msg := make([]byte, 1024)
 		if _, err = conn.Read(msg); err != nil {
 			fail(err, "Error while reading message from websocket connection")
 		}
